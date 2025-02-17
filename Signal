@@ -1,0 +1,33 @@
+from django.db import models, transaction
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(default="")
+
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, **kwargs):
+    print("Signal handler: Creating profile...")
+    Profile.objects.create(user=instance, bio="This is a test bio")
+    print("Signal handler: Profile created.")
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.db.utils import IntegrityError
+from myapp.models import Profile
+
+try:
+    with transaction.atomic():  # Start a transaction
+        print("Caller function: Creating user...")
+        user = User.objects.create(username="test_user")  # This triggers the post_save signal
+        print("Caller function: Raising an exception to force rollback...")
+        raise Exception("Forcing rollback!")  # Force rollback
+
+except Exception as e:
+    print(f"Exception occurred: {e}")
+
+# Check if the Profile was created
+profile_exists = Profile.objects.filter(user__username="test_user").exists()
+print(f"Does the profile exist in the database? {profile_exists}")
+
