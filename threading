@@ -1,0 +1,13 @@
+import threading
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+
+@receiver(post_save, sender=User)
+def my_signal_handler(sender, instance, **kwargs):
+    print(f"Signal Handler Thread ID: {threading.get_ident()}")
+import threading
+from django.contrib.auth.models import User
+
+print(f"Caller Function Thread ID: {threading.get_ident()}")
+user = User.objects.create(username="test_user")  # This triggers the post_save signal
